@@ -1,0 +1,49 @@
+
+create structure: registry
+	· name
+	· access
+	· type
+	· init
+	· description
+	· index			None
+
+
+create structure: enumeration
+	· name
+	· description
+	· members_by_name dict()
+	· members_by_value dict()
+
+	def __repr__(self):
+		return f'{self.__class__.__name__}(`{self.name}´)'
+
+create structure: enumeration_member
+	· name
+	· value
+	· description
+
+	def __repr__(self):
+		return f'{self.__class__.__name__}(`{self.name}´: {self.value!r})'
+
+
+create structure: command
+	· name
+	· description				None
+	· returns					None
+	· return_was_specified		False
+	· parameters				None
+
+create structure: command_return_entry
+	· name
+	· type
+	· description				None
+
+create structure: command_parameter_entry
+	· name
+	· type
+	· description				None
+
+create structure: command_return_variable_array
+	· name
+	· type
+	· description				None

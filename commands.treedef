@@ -1,0 +1,86 @@
+enumeration switching_control_mode: Switching control mode
+	name						value			description
+	----						-----			-----------
+	SCM_off						0				No output
+	SCM_series					1				Series of one or more (`series_count´) pulses of specific duty cycle (`pwm_compare_value / pwm_reload_value´)
+	SCM_repeated_series			2				Repeated series of one or more (`series_count´) pulses of specific duty cycle (`pwm_compare_value / pwm_reload_value´) where repetition interval is `series_repetition_interval / clock_frequency´ seconds and `repetition_count´ repeats are performed
+	SCM_continuous_series		3				Continuous series of one or more (`series_count´) pulses of specific duty cycle (`pwm_compare_value / pwm_reload_value´) where repetition interval is `series_repetition_interval / clock_frequency´ seconds
+	SCM_continuous				4				Continuous PWM output
+	SCM_raw_pd_control			5				Proportional derivative closed loop control using raw ADC values
+	SCM_filtered_pd_control		6				Proportional derivative closed loop control using filtered ADC values
+
+registry table:
+	name								access		type						init			description
+	----								------		----						----			-----------
+	pwm_reload_value					rw			uint32_t					23999			PWM auto reload value (default 1 kHz)
+	pwm_compare_value					rw			uint32_t					0				PWM compare value
+	control_mode						rw			switching_control_mode		off				Switching control mode
+	series_count						rw			uint16_t					1				Pulse count for the series mode
+	series_repetition_interval			rw			uint32_t					2399999			Auto reload value for repeated series timer (default 10 Hz)
+	repetition_count					rw			uint16_t					1				Repetition count for repeated series mode
+
+	raw_adc_subscription 				rw			uint32_t					0				Subscription mask for raw ADC values
+	filtered_adc_subscription 			rw			uint32_t					0				Subscription mask for filtered ADC values
+
+	raw_adc_threshold 					rw			uint16_t					0				ADC threshold for automatic shutdown
+	filtered_adc_threshold 				rw			uint16_t					0				Raw ADC threshold for automatic shutdown
+
+	adc_target_value	 				rw			uint16_t					0				ADC target value for closed loop control
+
+	clock_frequency						ro			uint32_t					24000000		MCU main clock frequency used for timers expressed in hertz
+
+
+command list:
+	set_uint32_parameter
+		parameters:
+			uint16_t registry_index
+			uint32_t value
+
+		returns nothing
+
+	set_uint16_parameter
+		parameters:
+			uint16_t registry_index
+			uint32_t value
+
+		returns nothing
+
+		note: This command is also used for enumerations
+
+	get_uint32_parameter
+		parameters:
+			uint16_t registry_index
+
+		returns:
+			uint32_t value
+
+	get_uint16_parameter
+		parameters:
+			uint16_t registry_index
+
+		returns:
+			uint16_t value
+
+		note: This command is also used for enumerations
+
+	start: Start switching
+		returns nothing
+
+	stop: Stop switching
+		returns nothing
+
+	retrieve_last_raw_adc_sample: Retrieve last raw ADC sample
+		parameters:
+			uint32_t channel_mask: Mask representing what ADC channels to receive raw data from
+				note: 0 means all available channels
+
+		returns:
+			uint16_t values[]
+
+	retrieve_last_filtered_adc_sample: Retrieve last filtered ADC sample
+		parameters:
+			uint32_t channel_mask
+				note: 0 means all available channels
+
+		returns:
+			uint16_t values[]

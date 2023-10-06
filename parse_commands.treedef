@@ -1,0 +1,92 @@
+note:
+	Later we should have a list of built in types so that we know when we need to look things up
+	Especially if we want to automatically create enums and such objects for python
+
+execute
+	project_scope = dict()
+	project_registry_table = dict()
+	project_command_table = dict()
+	from efforting.mvp4.table_processing.table import table
+
+process file: structures.treedef
+process file: processors.treedef
+process file: commands.treedef
+process file: templates-1.treedef
+
+execute:
+	#NOTE - this is hardcoded for now since we have not figured out a good way of doing this yet
+	def get_registry_type(reg):
+		if reg.type == 'switching_control_mode':
+			return 'uint32_t'
+		else:
+			return reg.type
+
+	def create_registry_structure():
+		members = list()
+		init = list()
+
+		for index, reg in enumerate(project_registry_table.values()):
+			if reg.description:
+				members.append(f'{reg.type} {reg.name}; /* {reg.description} */')
+			else:
+				members.append(f'{reg.type} {reg.name}; /* {reg.description} */')
+
+			if reg.init:
+				init.append(f'.{reg.name} = {reg.init},')
+			else:
+				init.append(f'.{reg.name} = {0},')
+
+			reg.index = index
+
+		return registry_structure_template.render(members=members, init=init)
+
+
+	#set_uint16_parameter
+	def create_access_functions(reg_type, valid_types):
+		set_valid_registries = list()
+		get_valid_registries = list()
+		py_getters = list()
+		py_setters = list()
+
+		for reg in project_registry_table.values():
+			if reg.type in valid_types:
+				if reg.access == 'rw':
+					set_valid_registries.append(set_registry_entry.render(reg=reg))
+					py_setters.append(python_api_set_registry.render(reg=reg, type=reg_type))
+
+				get_valid_registries.append(get_registry_entry.render(reg=reg))
+
+				py_getters.append(python_api_get_registry.render(reg=reg, type=reg_type))
+
+		return dict(
+			c_get = get_registry.render(type=reg_type, valid=get_valid_registries),
+			c_set = set_registry.render(type=reg_type, valid=set_valid_registries),
+			py_get = py_getters,
+			py_set = py_setters,
+		)
+
+	#Create indices
+	reg_structure = create_registry_structure()
+
+	main_interface = list()
+
+	access_functions = [
+		create_access_functions('uint16_t', {'uint16_t', 'switching_control_mode'}),
+		create_access_functions('uint32_t', {'uint32_t'}),
+	]
+
+
+	for func in access_functions:
+
+		main_interface.extend(func['py_get'])
+		main_interface.extend(func['py_set'])
+
+
+	for entry in main_interface:
+		print(entry.text)
+		print()
+
+
+
+
+

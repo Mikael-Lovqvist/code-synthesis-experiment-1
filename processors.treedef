@@ -1,0 +1,63 @@
+
+tree processor: command_entry_return_processor
+	mnemonic: {type} {name...}
+		#NOTE - we currently only support variable array or single entries
+		if name.endswith('[]'):
+			return command_return_variable_array(name[:-2], type)
+		else:
+			return command_return_entry(name, type)
+
+tree processor: command_entry_parameter_processor
+	mnemonic: {type} {name}
+		return command_parameter_entry(name, type)
+
+	mnemonic: {type} {name}: {description...}
+		return command_parameter_entry(name, type, description)
+
+tree processor: command_entry_processor
+	mnemonic: parameters[:]
+		CTX = config.context.accessor
+		CTX.pending_command.parameters = command_entry_parameter_processor.process_tree(node.body)
+
+	mnemonic: returns nothing
+		CTX = config.context.accessor
+		CTX.pending_command.returns = None
+		CTX.pending_command.return_was_specified = True
+
+	mnemonic: returns[:]
+		CTX = config.context.accessor
+		CTX.pending_command.return_was_specified = True
+		CTX.pending_command.returns = command_entry_return_processor.process_tree(node.body)
+
+	mnemonic: note[:] {comment...}
+		pass
+
+tree processor: command_list_processor
+	mnemonic: {name}: {description...}
+		CTX = config.context.accessor
+		new_command = CTX.project_command_table[name] = CTX.command(name, description)
+		command_entry_processor.process_tree(node.body, context=config.context.sub_context(pending_command=new_command))
+
+	mnemonic: {name}[:]
+		CTX = config.context.accessor
+		new_command = CTX.project_command_table[name] = CTX.command(name)
+		command_entry_processor.process_tree(node.body, context=config.context.sub_context(pending_command=new_command))
+
+amend processor:
+	mnemonic: enumeration {name}: {description...}
+		CTX = config.context.accessor
+		new_enum = CTX.enumeration(name, description)
+		CTX.project_scope[name] = new_enum
+
+		for name, value, description in table.from_raster(node.body.text).strict_iter('name', 'value', 'description'):
+			new_member = CTX.enumeration_member(name, eval(value), description)
+			new_enum.members_by_name[new_member.name] = new_enum.members_by_value[new_member.value] = new_member
+
+	mnemonic: registry table[:]
+		CTX = config.context.accessor
+		for name, access, type, init, description in table.from_raster(node.body.text).strict_iter('name', 'access', 'type', 'init', 'description'):
+			CTX.project_registry_table[name] = CTX.registry(name, access, type, init, description)
+
+
+	mnemonic: command list[:]
+		command_list_processor.process_tree(node.body)

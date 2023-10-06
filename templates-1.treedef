@@ -1,0 +1,54 @@
+
+code template: registry_structure_template
+	struct registry_table {
+		«members»
+	} registry = {
+		«init»
+	};
+
+code template: set_registry
+	operation_status set_«type»_registry(uint16_t registry, «type» value) {
+		#error We need to figure out a way to have custom functions here since we may need to update hardware specific registries when doing this
+		switch (registry) {
+			«valid»
+			default:
+				return OS_invalid_registry;
+		}
+	}
+
+code template: get_registry
+	operation_status get_«type»_registry(uint16_t registry, «type»* target) {
+		#error We need to figure out a way to have custom functions here since we may need to check hardware specific registries when doing this
+		switch (registry) {
+			«valid»
+			default:
+				return OS_invalid_registry;
+		}
+	}
+
+code template: set_registry_entry
+	case «hex(reg.index)»: /* «reg.name» */
+		registry.«reg.name» = value;
+		return OS_success;
+
+code template: get_registry_entry
+	case «hex(reg.index)»: /* «reg.name» */
+		*target = registry.«reg.name»;
+		return OS_success;
+
+
+code template: python_api_get_registry
+	def get_«reg.name»(self):
+		value = ctypes.«type»()
+		status = self._interface.get_«type»_registry(«hex(reg.index)», value)
+		if status == operation_state.success:
+			return value.value
+		else:
+			raise(status)
+
+code template: python_api_set_registry
+	def set_«reg.name»(self, value):
+		status = self._interface.set_«type»_registry(«hex(reg.index)», value)
+		if status != operation_state.success:
+			raise(status)
+
